@@ -1,50 +1,77 @@
 <script setup>
-import { ref } from "vue";
-const address = ref("0xxxxx");
-const sampleData = ref([
-  {
-    name: "NFT#1",
-    description: "Alchemy's First NFT",
-    website: "http://axieinfinity.io",
-    image:
-      "https://gateway.pinata.cloud/ipfs/QmTsRJX7r5gyubjkdmzFrKQhHv74p5wT9LdeF1m3RTqrE5",
-    price: "0.03ETH",
-    currentlySelling: "True",
-    address: "0xe81Bf5A757CB4f7F82a2F23b1e59bE45c33c5b13",
-  },
-  {
-    name: "NFT#2",
-    description: "Alchemy's Second NFT",
-    website: "http://axieinfinity.io",
-    image:
-      "https://gateway.pinata.cloud/ipfs/QmdhoL9K8my2vi3fej97foiqGmJ389SMs55oC5EdkrxF2M",
-    price: "0.03ETH",
-    currentlySelling: "True",
-    address: "0xe81Bf5A757C4f7F82a2F23b1e59bE45c33c5b13",
-  },
-  {
-    name: "NFT#3",
-    description: "Alchemy's Third NFT",
-    website: "http://axieinfinity.io",
-    image:
-      "https://gateway.pinata.cloud/ipfs/QmTsRJX7r5gyubjkdmzFrKQhHv74p5wT9LdeF1m3RTqrE5",
-    price: "0.03ETH",
-    currentlySelling: "True",
-    address: "0xe81Bf5A757C4f7F82a2F23b1e59bE45c33c5b13",
-  },
-]);
+import { ref, onMounted } from "vue";
+import { ethers } from "ethers";
+import MarketplaceJSON from "../assets/Marketplace.json";
+import axios from "axios";
+
+const nfts = ref([]);
+const address = ref("");
+const totalPrice = ref("");
+
+async function getNFTData() {
+  let sumPrice = 0;
+
+  //After adding your Hardhat network to your metamask, this code will get providers and signers
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
+  const addr = await signer.getAddress();
+
+  //Pull the deployed contract instance
+  let contract = new ethers.Contract(
+    MarketplaceJSON.address,
+    MarketplaceJSON.abi,
+    signer
+  );
+
+  //create an NFT Token
+  let transaction = await contract.getMyNFTs();
+
+  /*
+   * Below function takes the metadata from tokenURI and the data returned by getMyNFTs() contract function
+   * and creates an object of information that is to be displayed
+   */
+
+  const items = await Promise.all(
+    transaction.map(async (i) => {
+      const tokenURI = await contract.tokenURI(i.tokenId);
+      let meta = await axios.get(tokenURI);
+      meta = meta.data;
+
+      let price = ethers.utils.formatUnits(i.price.toString(), "ether");
+      let item = {
+        price,
+        tokenId: i.tokenId.toNumber(),
+        seller: i.seller,
+        owner: i.owner,
+        image: meta.image,
+        name: meta.name,
+        description: meta.description,
+      };
+      sumPrice += Number(price);
+      return item;
+    })
+  );
+
+  nfts.value = items;
+  address.value = addr;
+  totalPrice.value = sumPrice.toPrecision(3);
+}
+
+onMounted(() => {
+  getNFTData();
+});
 </script>
 <template>
   <section class="row">
     <ul>
       <li><span>Wallet address</span>: {{ address }}</li>
-      <li><span>No. of NFTs</span>: 0 NFT's</li>
-      <li><span>Total value</span>:0 ETH</li>
+      <li><span>No. of NFTs</span>: {{ nfts.length }} NFT's</li>
+      <li><span>Total value</span>:{{ totalPrice }} ETH</li>
     </ul>
   </section>
 
   <section class="row">
-    <div class="col" v-for="(item, index) in sampleData" :key="index">
+    <div class="col pb-5" v-for="(item, index) in nfts" :key="index">
       <div class="card">
         <img :src="item.image" class="card-img-top" alt="..." />
         <div class="card-body">
@@ -53,13 +80,9 @@ const sampleData = ref([
           <p class="card-text">
             {{ item.description }}
           </p>
-          <!-- <a :href="item.website" class="btn btn-primary">Go somewhere</a> -->
-          <RouterLink class="btn btn-primary" to="/nftpage"
-            >Open page</RouterLink
+          <RouterLink class="btn btn-primary" :to="`/nftpage/${item.tokenId}`"
+            >Open NFT</RouterLink
           >
-        </div>
-        <div class="card-footer text-muted">
-          Selling now: {{ item.currentlySelling }}
         </div>
       </div>
     </div>

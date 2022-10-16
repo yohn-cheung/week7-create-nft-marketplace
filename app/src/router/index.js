@@ -19,7 +19,7 @@ const router = createRouter({
       component: () => import("../views/ProfileView.vue"),
     },
     {
-      path: "/nftpage",
+      path: "/nftpage/:id",
       name: "nftpage",
       component: () => import("../views/NFTView.vue"),
     },

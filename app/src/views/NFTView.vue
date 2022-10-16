@@ -1,20 +1,80 @@
 <script setup>
-import { ref } from "vue";
-
+import { ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { ethers } from "ethers";
+import MarketplaceJSON from "../assets/Marketplace.json";
+import axios from "axios";
 const item = ref({
-  name: "NFT#1",
-  description: "Alchemy's First NFT",
-  website: "http://axieinfinity.io",
-  image:
-    "https://gateway.pinata.cloud/ipfs/QmTsRJX7r5gyubjkdmzFrKQhHv74p5wT9LdeF1m3RTqrE5",
-  price: "0.03ETH",
-  currentlySelling: "True",
-  address: "0xe81Bf5A757CB4f7F82a2F23b1e59bE45c33c5b13",
+  price: "",
+  tokenId: "",
+  seller: "",
+  owner: "",
+  image: "",
+  name: "",
+  description: "",
+});
+
+const route = useRoute();
+const address = ref("");
+
+async function getNFTData(tokenId) {
+  //After adding your Hardhat network to your metamask, this code will get providers and signers
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
+  const addr = await signer.getAddress();
+  console.log("address: ", addr);
+  //Pull the deployed contract instance
+  let contract = new ethers.Contract(
+    MarketplaceJSON.address,
+    MarketplaceJSON.abi,
+    signer
+  );
+  //create an NFT Token
+  const tokenURI = await contract.tokenURI(tokenId);
+  const listedToken = await contract.getListedTokenForId(tokenId);
+  let meta = await axios.get(tokenURI);
+  meta = meta.data;
+
+  item.value.price = meta.price;
+  item.value.tokenId = tokenId;
+  item.value.seller = listedToken.seller;
+  item.value.owner = listedToken.owner;
+  item.value.image = meta.image;
+  item.value.name = meta.name;
+  item.value.description = meta.description;
+
+  address.value = addr;
+}
+
+async function buyNFT(tokenId) {
+  try {
+    //After adding your Hardhat network to your metamask, this code will get providers and signers
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    //Pull the deployed contract instance
+    let contract = new ethers.Contract(
+      MarketplaceJSON.address,
+      MarketplaceJSON.abi,
+      signer
+    );
+    const salePrice = ethers.utils.parseUnits(item.value.price, "ether");
+    let transaction = await contract.executeSale(tokenId, { value: salePrice });
+    await transaction.wait();
+
+    alert("You successfully bought the NFT!");
+  } catch (e) {
+    alert("Payment went wrong");
+    //alert("Upload Error" + e);
+  }
+}
+
+onMounted(() => {
+  getNFTData(route.params.id);
 });
 </script>
 
 <template>
-  <h1>This is NFT single page page</h1>
+  <h1 class="text-center">BUY THIS NFT</h1>
   <section class="row">
     <div class="col-md-6 offset-md-3">
       <div class="card">
@@ -25,10 +85,12 @@ const item = ref({
           <p class="card-text">
             {{ item.description }}
           </p>
-          <a :href="item.website" class="btn btn-primary">Go somewhere</a>
-        </div>
-        <div class="card-footer text-muted">
-          Selling now: {{ item.currentlySelling }}
+          <div v-if="address === item.owner || address === item.seller">
+            You are the owner of this NFT
+          </div>
+          <a v-else class="btn btn-primary" @click="buyNFT(item.tokenId)"
+            >Buy NFT</a
+          >
         </div>
       </div>
     </div>
