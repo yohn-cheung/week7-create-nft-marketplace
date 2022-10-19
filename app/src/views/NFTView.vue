@@ -8,6 +8,10 @@ import axios from "axios";
 import { useWalletStore } from "@/stores/wallet";
 
 const wallet = useWalletStore();
+const loading = ref(false);
+const errorState = ref(false);
+const message = ref("");
+const notification = ref(false);
 
 const item = ref({
   price: "",
@@ -51,6 +55,9 @@ async function getNFTData(tokenId) {
 }
 
 async function buyNFT(tokenId) {
+  loading.value = true;
+  notification.value = false;
+
   try {
     //After adding your Hardhat network to your metamask, this code will get providers and signers
     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -61,16 +68,23 @@ async function buyNFT(tokenId) {
       MarketplaceJSON.abi,
       signer
     );
-    // const priceToString = item.value.price.toString();
-    //  const salePrice = ethers.utils.parseUnits(priceToString, "ether");
-    const salePrice = ethers.utils.parseUnits(item.value.price, "ether");
+
+    const priceToString = item.value.price.toString();
+    const salePrice = ethers.utils.parseUnits(priceToString, "ether");
     let transaction = await contract.executeSale(tokenId, { value: salePrice });
     await transaction.wait();
 
-    alert("You successfully bought the NFT!");
+    notification.value = true;
+    errorState.value = false;
+    message.value = "You successfully bought the NFT!";
+    loading.value = false;
   } catch (e) {
-    alert("Payment went wrong");
+    // alert("Payment went wrong");
     //alert("Upload Error" + e);
+    notification.value = true;
+    errorState.value = true;
+    message.value = "Payment went wrong";
+    loading.value = false;
   }
 }
 
@@ -102,10 +116,34 @@ onMounted(() => {
             <div v-if="address === item.owner || address === item.seller">
               You are the owner of this NFT
             </div>
-            <a v-else class="btn btn-primary" @click="buyNFT(item.tokenId)"
+            <a
+              v-else
+              :class="loading ? 'disabled' : ''"
+              class="btn btn-primary"
+              @click="buyNFT(item.tokenId)"
               >Buy NFT</a
             >
           </div>
+        </div>
+      </div>
+      <div class="col-md-6 offset-md-3 mt-3" v-if="loading">
+        <div class="d-flex align-items-center">
+          <strong>Loading...</strong>
+          <div
+            class="spinner-border ms-auto"
+            role="status"
+            aria-hidden="true"
+          ></div>
+        </div>
+      </div>
+
+      <div class="col-md-6 offset-md-3 mt-3" v-if="notification">
+        <div
+          class="alert"
+          :class="errorState ? 'alert-danger' : 'alert-success'"
+          role="alert"
+        >
+          {{ message }}
         </div>
       </div>
     </section>
