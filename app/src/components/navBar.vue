@@ -39,7 +39,7 @@ async function connectWallet() {
     });
     currentAccount.value = accounts[0];
     isWalletConnected();
-    window.reload;
+    location.reload();
   } catch (error) {
     console.log("something went wrong, try again");
   }
