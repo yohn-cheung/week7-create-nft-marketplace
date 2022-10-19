@@ -32,7 +32,6 @@ async function connectWallet() {
   try {
     const { ethereum } = window;
     if (!ethereum) {
-      console.log("please install MetaMask");
       alert("please install MetaMask");
     }
     const accounts = await ethereum.request({
@@ -42,7 +41,6 @@ async function connectWallet() {
     isWalletConnected();
     window.reload;
   } catch (error) {
-    console.log(error);
     console.log("something went wrong, try again");
   }
 }
