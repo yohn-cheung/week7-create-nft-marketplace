@@ -31,7 +31,6 @@ async function onFileChanged($event) {
     try {
       //upload the file to IPFS
       const response = await uploadFileToIPFS(file);
-      console.log("response: ", response);
       if (response.success === true) {
         notification.value = true;
         errorState.value = false;
@@ -62,7 +61,7 @@ async function uploadMetadataToIPFS() {
       return response.pinataURL;
     }
   } catch (e) {
-    console.log("Something went wrong with uploading to Pinata");
+    alert("Something went wrong with uploading to Pinata");
   }
 }
 
@@ -102,7 +101,6 @@ async function listNFT() {
 
     window.location.replace("/");
   } catch (e) {
-    console.log("error: ", e);
     notification.value = true;
     errorState.value = true;
     message.value = "Uploading NFT failed";
