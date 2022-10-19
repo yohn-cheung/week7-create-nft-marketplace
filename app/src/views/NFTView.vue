@@ -78,6 +78,8 @@ async function buyNFT(tokenId) {
     errorState.value = false;
     message.value = "You successfully bought the NFT!";
     loading.value = false;
+
+    location.reload();
   } catch (e) {
     // alert("Payment went wrong");
     //alert("Upload Error" + e);
