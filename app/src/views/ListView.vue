@@ -1,9 +1,15 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { ethers } from "ethers";
 
 import { uploadFileToIPFS, uploadJSONToIPFS } from "../assets/pinata";
 import MarketplaceJSON from "../assets/Marketplace.json";
+import { useWalletStore } from "@/stores/wallet";
+
+const wallet = useWalletStore();
+const loading = ref(false);
+// const disabled = ref(true);
+const errorState = ref(false);
 
 const form = ref({
   name: "",
@@ -13,8 +19,11 @@ const form = ref({
 
 const fileURL = ref(null);
 const message = ref("");
+const notification = ref(false);
 
 async function onFileChanged($event) {
+  loading.value = true;
+  notification.value = false;
   const target = $event.target;
   if (target && target.files) {
     var file = target.files[0];
@@ -22,38 +31,27 @@ async function onFileChanged($event) {
     try {
       //upload the file to IPFS
       const response = await uploadFileToIPFS(file);
+      console.log("response: ", response);
       if (response.success === true) {
-        console.log("Uploaded image to Pinata: ", response.pinataURL);
+        notification.value = true;
+        errorState.value = false;
+        message.value = "Uploaded image to Pinata";
         fileURL.value = response.pinataURL;
-
-        console.log("fileURL: ", fileURL);
       }
     } catch (e) {
-      console.log("Error during file upload", e);
+      notification.value = true;
+      errorState.value = true;
+      message.value = "Error during file upload";
     }
   }
+  loading.value = false;
 }
 
-// This function uploads the metadata to IPDS
 async function uploadMetadataToIPFS() {
-  //TODO: FIND A SOLUTION FOR THIS
-  //Make sure that none of the fields are empty
-  // if (
-  //   form.value.name !== "" ||
-  //   form.value.description !== "" ||
-  //   form.value.price !== "" ||
-  //   !fileURL.value
-  // )
-  //   return;
-
-  if (!fileURL.value) return;
-
-  console.log("test past the return");
-
   const nftJSON = {
     name: form.value.name,
     description: form.value.description,
-    price: form.value.price,
+    price: form.value.price.toString(),
     image: fileURL.value,
   };
 
@@ -61,23 +59,22 @@ async function uploadMetadataToIPFS() {
     //upload the metadata JSON to IPFS
     const response = await uploadJSONToIPFS(nftJSON);
     if (response.success === true) {
-      console.log("Uploaded JSON to Pinata: ", response);
       return response.pinataURL;
     }
   } catch (e) {
-    alert("something went worng with uploading");
-    console.log("error uploading JSON metadata:", e);
+    console.log("Something went wrong with uploading to Pinata");
   }
 }
 
 async function listNFT() {
+  notification.value = false;
+  loading.value = true;
   //Upload data to IPFS
   try {
     const metadataURL = await uploadMetadataToIPFS();
     //After adding your Hardhat network to your metamask, this code will get providers and signers
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
-    message.value = "Please wait.. uploading (upto 5 mins)";
 
     // //Pull the deployed contract instance
     let contract = new ethers.Contract(
@@ -86,10 +83,9 @@ async function listNFT() {
       signer
     );
 
-    console.log("contract: ", contract);
-
     //massage the params to be sent to the create NFT request
-    const price = ethers.utils.parseUnits(form.value.price, "ether");
+    const priceToString = form.value.price.toString();
+    const price = ethers.utils.parseUnits(priceToString, "ether");
     let listingPrice = await contract.getListPrice();
     listingPrice = listingPrice.toString();
 
@@ -99,61 +95,118 @@ async function listNFT() {
     });
     await transaction.wait();
 
-    alert("Successfully listed your NFT!");
-    message.value = "";
+    notification.value = true;
+    errorState.value = false;
+    message.value = "Successfully listed your NFT!";
+    loading.value = false;
 
     window.location.replace("/");
   } catch (e) {
-    // alert("Upload error" + e);
-    alert("upload cancelled");
+    console.log("error: ", e);
+    notification.value = true;
+    errorState.value = true;
+    message.value = "Uploading NFT failed";
+    loading.value = false;
   }
 }
+
+const disabled = computed(() => {
+  if (
+    !form.value.name ||
+    !form.value.description ||
+    !form.value.price ||
+    !fileURL.value ||
+    loading.value
+  ) {
+    return true;
+  } else {
+    return false;
+  }
+});
 </script>
 
 <template>
-  <h3 className="text-center">Upload your NFT to the marketplace</h3>
-  <section class="row g-3">
-    <div class="col-md-12">
-      <label class="form-label">NFT name</label>
-      <input type="text" class="form-control" v-model="form.name" />
+  <div v-if="!wallet.connected">
+    <div class="alert alert-secondary text-center" role="alert">
+      Connect your wallet
     </div>
-    <div class="col-12">
-      <span class="form-label">NFT desription</span>
-      <textarea
-        class="form-control"
-        cols="40"
-        rows="5"
-        aria-label="With textarea"
-        v-model="form.description"
-      ></textarea>
-    </div>
-    <div class="col-6">
-      <label class="form-label">Price in NFT</label>
-      <input
-        class="form-control"
-        placeholder="Min 0.01 ETH"
-        step="0.01"
-        v-model="form.price"
-      />
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Upload image</label>
-      <input
-        type="file"
-        class="form-control"
-        @change="onFileChanged($event)"
-        accept="image/*"
-        capture
-      />
-    </div>
-    <div class="col-12 d-grid">
-      <a type="button" class="btn btn-primary" @click="listNFT"> List NFT </a>
-    </div>
-
-    <div>
-      {{ message }}
-    </div>
-  </section>
+  </div>
+  <div v-else>
+    <h3 className="text-center">Upload your NFT to the marketplace</h3>
+    <section class="row">
+      <div class="col-md-8 offset-md-2">
+        <div class="row">
+          <div class="col-md-12">
+            <label class="form-label">NFT name</label>
+            <input type="text" class="form-control" v-model="form.name" />
+          </div>
+          <div class="col-md-12">
+            <span class="form-label">NFT desription</span>
+            <textarea
+              class="form-control"
+              cols="40"
+              rows="5"
+              aria-label="With textarea"
+              v-model="form.description"
+            ></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Price in NFT</label>
+            <input
+              type="number"
+              class="form-control"
+              placeholder="Min 0.01 ETH"
+              step="0.01"
+              v-model.number="form.price"
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Upload image</label>
+            <input
+              type="file"
+              class="form-control"
+              @change="onFileChanged($event)"
+              accept="image/*"
+              capture
+            />
+          </div>
+          <div class="col-md-12 d-grid mt-3">
+            <a
+              type="button"
+              class="btn btn-primary"
+              :class="disabled ? 'disabled' : ''"
+              @click="listNFT"
+            >
+              List NFT
+            </a>
+          </div>
+          <div class="col-12 d-grid mt-3" v-if="loading">
+            <div class="d-flex align-items-center">
+              <strong>Loading...</strong>
+              <div
+                class="spinner-border ms-auto"
+                role="status"
+                aria-hidden="true"
+              ></div>
+            </div>
+          </div>
+          <div class="col-12 d-grid mt-3" v-if="notification">
+            <div
+              class="alert"
+              :class="errorState ? 'alert-danger' : 'alert-success'"
+              role="alert"
+            >
+              {{ message }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
 </template>
 
-<style></style>
+<style scoped>
+a.disabled {
+  pointer-events: none;
+}
+</style>

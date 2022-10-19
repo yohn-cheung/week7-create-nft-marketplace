@@ -4,6 +4,11 @@ import { useRoute } from "vue-router";
 import { ethers } from "ethers";
 import MarketplaceJSON from "../assets/Marketplace.json";
 import axios from "axios";
+
+import { useWalletStore } from "@/stores/wallet";
+
+const wallet = useWalletStore();
+
 const item = ref({
   price: "",
   tokenId: "",
@@ -22,7 +27,6 @@ async function getNFTData(tokenId) {
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   const signer = provider.getSigner();
   const addr = await signer.getAddress();
-  console.log("address: ", addr);
   //Pull the deployed contract instance
   let contract = new ethers.Contract(
     MarketplaceJSON.address,
@@ -57,6 +61,8 @@ async function buyNFT(tokenId) {
       MarketplaceJSON.abi,
       signer
     );
+    // const priceToString = item.value.price.toString();
+    //  const salePrice = ethers.utils.parseUnits(priceToString, "ether");
     const salePrice = ethers.utils.parseUnits(item.value.price, "ether");
     let transaction = await contract.executeSale(tokenId, { value: salePrice });
     await transaction.wait();
@@ -74,27 +80,36 @@ onMounted(() => {
 </script>
 
 <template>
-  <h1 class="text-center">BUY THIS NFT</h1>
-  <section class="row">
-    <div class="col-md-6 offset-md-3">
-      <div class="card">
-        <img :src="item.image" class="card-img-top" alt="..." />
-        <div class="card-body">
-          <h5 class="card-title">{{ item.name }}</h5>
-          <h6 class="card-subtitle mb-2 text-muted">Price: {{ item.price }}</h6>
-          <p class="card-text">
-            {{ item.description }}
-          </p>
-          <div v-if="address === item.owner || address === item.seller">
-            You are the owner of this NFT
+  <div v-if="!wallet.connected">
+    <div class="alert alert-secondary text-center" role="alert">
+      Connect your wallet
+    </div>
+  </div>
+  <div v-else>
+    <h1 class="text-center">BUY THIS NFT</h1>
+    <section class="row">
+      <div class="col-md-6 offset-md-3">
+        <div class="card">
+          <img :src="item.image" class="card-img-top" alt="..." />
+          <div class="card-body">
+            <h5 class="card-title">{{ item.name }}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">
+              Price: {{ item.price }}
+            </h6>
+            <p class="card-text">
+              {{ item.description }}
+            </p>
+            <div v-if="address === item.owner || address === item.seller">
+              You are the owner of this NFT
+            </div>
+            <a v-else class="btn btn-primary" @click="buyNFT(item.tokenId)"
+              >Buy NFT</a
+            >
           </div>
-          <a v-else class="btn btn-primary" @click="buyNFT(item.tokenId)"
-            >Buy NFT</a
-          >
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </div>
 </template>
 
 <style></style>

@@ -4,6 +4,10 @@ import { RouterLink } from "vue-router";
 import { ethers } from "ethers";
 import MarketplaceJSON from "../assets/Marketplace.json";
 import axios from "axios";
+import { useWalletStore } from "@/stores/wallet";
+
+const wallet = useWalletStore();
+
 const nfts = ref([]);
 
 async function getAllNFTs() {
@@ -48,23 +52,36 @@ onMounted(() => {
 </script>
 
 <template>
-  <h1 class="text-center">Top NFTs</h1>
-  <section class="row">
-    <div class="col pb-5" v-for="(item, index) in nfts" :key="index">
-      <div class="card">
-        <img :src="item.image" class="card-img-top" alt="..." />
-        <div class="card-body">
-          <h5 class="card-title">{{ item.name }}</h5>
-          <h6 class="card-subtitle mb-2 text-muted">Price: {{ item.price }}</h6>
-          <p class="card-text">
-            {{ item.description }}
-          </p>
-          <!-- <a :href="item.website" class="btn btn-primary">Go somewhere</a> -->
-          <RouterLink class="btn btn-primary" :to="`/nftpage/${item.tokenId}`"
-            >Open NFT</RouterLink
-          >
+  <div v-if="!wallet.connected">
+    <div class="alert alert-secondary text-center" role="alert">
+      Connect your wallet
+    </div>
+  </div>
+  <div v-else>
+    <h1 class="text-center">Top NFTs</h1>
+    <section class="row">
+      <div
+        class="col-md-4 col-sm-4 pb-5"
+        v-for="(item, index) in nfts"
+        :key="index"
+      >
+        <div class="card">
+          <img :src="item.image" class="card-img-top" alt="..." />
+          <div class="card-body">
+            <h5 class="card-title">{{ item.name }}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">
+              Price: {{ item.price }}
+            </h6>
+            <p class="card-text">
+              {{ item.description }}
+            </p>
+            <!-- <a :href="item.website" class="btn btn-primary">Go somewhere</a> -->
+            <RouterLink class="btn btn-primary" :to="`/nftpage/${item.tokenId}`"
+              >Open NFT</RouterLink
+            >
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </div>
 </template>

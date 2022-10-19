@@ -2,7 +2,9 @@
 import { RouterLink } from "vue-router";
 import { ref, onMounted } from "vue";
 
-const connected = ref(false);
+import { useWalletStore } from "@/stores/wallet";
+
+const wallet = useWalletStore();
 const currentAccount = ref("");
 
 async function isWalletConnected() {
@@ -20,10 +22,7 @@ async function isWalletConnected() {
     if (accounts.length > 0) {
       const account = accounts[0];
       currentAccount.value = accounts[0];
-      connected.value = true;
-      console.log("wallet is connected! " + account);
-    } else {
-      alert("Make sure MetaMask is connected");
+      wallet.connected = true;
     }
   } catch (error) {
     console.log("error: ", error);
@@ -69,7 +68,7 @@ onMounted(() => {
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarCollapse">
-        <ul class="navbar-nav me-auto mb-2 mb-md-0" v-if="connected">
+        <ul class="navbar-nav me-auto mb-2 mb-md-0" v-if="wallet.connected">
           <li class="nav-item">
             <RouterLink class="nav-link" exact-active-class="active" to="/"
               >Marketplace</RouterLink
@@ -89,7 +88,9 @@ onMounted(() => {
             >
           </li>
         </ul>
-        <a class="btn btn-outline-success" v-if="connected">Connected </a>
+        <a class="btn btn-outline-success" v-if="wallet.connected"
+          >Connected
+        </a>
         <a class="btn btn-outline-success" v-else @click="connectWallet"
           >Connect Wallet
         </a>
