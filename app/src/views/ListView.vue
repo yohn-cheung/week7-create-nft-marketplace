@@ -51,7 +51,7 @@ async function uploadMetadataToIPFS() {
   const nftJSON = {
     name: form.value.name,
     description: form.value.description,
-    price: form.value.price.toString(),
+    price: form.value.price,
     image: fileURL.value,
   };
 
