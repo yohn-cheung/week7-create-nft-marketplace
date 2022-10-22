@@ -52,8 +52,10 @@ onMounted(() => {
 
 <template>
   <nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="/">Top navbar</a>
+    <div class="container">
+      <a class="navbar-brand" href="/">
+        <img src="@/assets/logo.png" class="logo" />
+      </a>
       <button
         class="navbar-toggler"
         type="button"
@@ -97,4 +99,8 @@ onMounted(() => {
   </nav>
 </template>
 
-<style scoped></style>
+<style scoped>
+.logo {
+  width: 100px;
+}
+</style>
