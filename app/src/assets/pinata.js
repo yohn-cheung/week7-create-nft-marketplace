@@ -22,7 +22,6 @@ export const uploadJSONToIPFS = async (JSONBody) => {
       };
     })
     .catch(function (error) {
-      console.log(error);
       return {
         success: false,
         message: error.message,
@@ -32,8 +31,6 @@ export const uploadJSONToIPFS = async (JSONBody) => {
 
 export const uploadFileToIPFS = async (file) => {
   const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
-  //making axios POST request to Pinata ⬇️
-
   let data = new FormData();
   data.append("file", file);
 
@@ -73,7 +70,6 @@ export const uploadFileToIPFS = async (file) => {
       },
     })
     .then(function (response) {
-      console.log("image uploaded", response.data.IpfsHash);
       return {
         success: true,
         pinataURL:
@@ -81,7 +77,6 @@ export const uploadFileToIPFS = async (file) => {
       };
     })
     .catch(function (error) {
-      console.log(error);
       return {
         success: false,
         message: error.message,

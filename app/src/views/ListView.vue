@@ -34,7 +34,7 @@ async function onFileChanged($event) {
       if (response.success === true) {
         notification.value = true;
         errorState.value = false;
-        message.value = "Uploaded image to Pinata";
+        message.value = "Image uploaded";
         fileURL.value = response.pinataURL;
       }
     } catch (e) {
@@ -61,7 +61,7 @@ async function uploadMetadataToIPFS() {
       return response.pinataURL;
     }
   } catch (e) {
-    alert("Something went wrong with uploading to Pinata");
+    alert("Something went wrong with uploading");
   }
 }
 
