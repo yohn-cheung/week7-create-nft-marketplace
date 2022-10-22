@@ -61,6 +61,16 @@ onMounted(() => {
     <h1 class="text-center">Top NFTs</h1>
     <section class="row">
       <div
+        v-if="nfts.length === 0"
+        class="alert alert-dark text-center"
+        role="alert"
+      >
+        <RouterLink class="nav-link" to="/list"
+          >Upload your first NFT</RouterLink
+        >
+      </div>
+
+      <div
         class="col-md-4 col-sm-4 pb-5"
         v-for="(item, index) in nfts"
         :key="index"

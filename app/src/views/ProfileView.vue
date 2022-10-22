@@ -81,6 +81,13 @@ onMounted(() => {
 
     <section class="row">
       <div
+        v-if="nfts.length === 0"
+        class="alert alert-dark text-center"
+        role="alert"
+      >
+        You have not yet bought a NFT
+      </div>
+      <div
         class="col-md-4 col-sm-4 pb-5"
         v-for="(item, index) in nfts"
         :key="index"
@@ -105,4 +112,8 @@ onMounted(() => {
   </div>
 </template>
 
-<style></style>
+<style scoped>
+ul li {
+  list-style: none;
+}
+</style>
